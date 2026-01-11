@@ -212,20 +212,29 @@ function selectChannel(channelName) {
     document.querySelectorAll('.channel-item').forEach(item => {
         item.classList.remove('active');
     });
-    document.querySelector(`[data-channel="${channelName}"]`).classList.add('active');
-    document.getElementById('currentChannelName').textContent = `# ${channelName}`;
-    document.getElementById('messageInput').placeholder = `Message #${channelName}`;
+    const channelElement = document.querySelector(`[data-channel="${channelName}"]`);
+    if (channelElement) {
+        channelElement.classList.add('active');
+    }
+    document.getElementById('currentChannelName').textContent = channelName;
+    document.getElementById('messageInput').placeholder = `Type a message...`;
     
     // Clear and reload messages for this channel
     const container = document.getElementById('messagesContainer');
     container.innerHTML = '';
-    container.innerHTML = `<div class="welcome-message">
-        <h1>Welcome to #${channelName}!</h1>
-        <p>This is the start of the #${channelName} channel.</p>
-    </div>`;
+    container.innerHTML = `
+        <div class="welcome-screen">
+            <div class="welcome-icon">💬</div>
+            <h1>Welcome to #${channelName}!</h1>
+            <p>This is the beginning of the <strong>#${channelName}</strong> channel.</p>
+            <p class="welcome-hint">Start chatting by typing a message below.</p>
+        </div>
+    `;
     
     // Request messages for this channel
-    connection.invoke("GetChannelMessages", channelName);
+    if (connection && connection.state === signalR.HubConnectionState.Connected) {
+        connection.invoke("GetChannelMessages", channelName);
+    }
 }
 
 function joinVoiceChannel(channelName) {
@@ -273,16 +282,22 @@ function leaveVoiceChannel() {
 
 function showCreateChannelModal() {
     document.getElementById('createChannelModal').classList.add('show');
-    document.getElementById('newChannelName').focus();
+    setTimeout(() => document.getElementById('newChannelName').focus(), 100);
 }
 
 function showCreateVoiceChannelModal() {
     document.getElementById('createVoiceChannelModal').classList.add('show');
-    document.getElementById('newVoiceChannelName').focus();
+    setTimeout(() => document.getElementById('newVoiceChannelName').focus(), 100);
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('show');
+}
+
+function closeModalOnOverlay(event, modalId) {
+    if (event.target.classList.contains('modal-overlay')) {
+        closeModal(modalId);
+    }
 }
 
 function createChannel() {
@@ -310,7 +325,10 @@ function addChannelToUI(channelName, type) {
         item.className = 'channel-item';
         item.setAttribute('data-channel', channelName);
         item.onclick = () => selectChannel(channelName);
-        item.innerHTML = `<span>#</span> ${channelName}`;
+        item.innerHTML = `
+            <span class="channel-icon">#</span>
+            <span class="channel-name">${channelName}</span>
+        `;
         list.appendChild(item);
     } else if (type === 'voice') {
         const list = document.getElementById('voiceChannelsList');
@@ -318,7 +336,10 @@ function addChannelToUI(channelName, type) {
         item.className = 'channel-item voice';
         item.setAttribute('data-voice-channel', channelName);
         item.onclick = () => joinVoiceChannel(channelName);
-        item.innerHTML = `<span>🔊</span> ${channelName.replace(/-/g, ' ')}`;
+        item.innerHTML = `
+            <span class="channel-icon">🎙️</span>
+            <span class="channel-name">${channelName.replace(/-/g, ' ')}</span>
+        `;
         list.appendChild(item);
     }
 }
@@ -342,9 +363,9 @@ function sendMessage() {
 
 function addMessageToUI(message, author, timestamp) {
     const container = document.getElementById('messagesContainer');
-    const welcomeMsg = container.querySelector('.welcome-message');
-    if (welcomeMsg) {
-        welcomeMsg.remove();
+    const welcomeScreen = container.querySelector('.welcome-screen');
+    if (welcomeScreen) {
+        welcomeScreen.remove();
     }
     
     const messageDiv = document.createElement('div');
@@ -366,7 +387,8 @@ function addMessageToUI(message, author, timestamp) {
     
     const timeSpan = document.createElement('span');
     timeSpan.className = 'message-timestamp';
-    timeSpan.textContent = new Date(timestamp).toLocaleTimeString();
+    const date = new Date(timestamp);
+    timeSpan.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
     header.appendChild(authorSpan);
     header.appendChild(timeSpan);
@@ -392,20 +414,28 @@ function updateUsersList() {
     
     // Add self
     const selfItem = document.createElement('div');
-    selfItem.className = 'user-item' + (currentVoiceChannel ? ' voice-active' : '');
+    selfItem.className = 'member-item' + (currentVoiceChannel ? ' voice-active' : '');
     selfItem.innerHTML = `
-        <div class="user-item-avatar">${myUsername.charAt(0).toUpperCase()}</div>
-        <div class="user-item-name">${myUsername} (You)</div>
+        <div class="member-avatar">
+            ${myUsername.charAt(0).toUpperCase()}
+            <div class="status-badge online"></div>
+        </div>
+        <div class="member-name">${myUsername}</div>
+        <div class="member-badge">You</div>
     `;
     list.appendChild(selfItem);
     
     // Add other users
     Object.values(users).forEach(user => {
         const item = document.createElement('div');
-        item.className = 'user-item' + (user.inVoice ? ' voice-active' : '');
+        item.className = 'member-item' + (user.inVoice ? ' voice-active' : '');
+        const statusClass = user.inVoice ? 'voice' : 'online';
         item.innerHTML = `
-            <div class="user-item-avatar">${user.username.charAt(0).toUpperCase()}</div>
-            <div class="user-item-name">${user.username}</div>
+            <div class="member-avatar">
+                ${user.username.charAt(0).toUpperCase()}
+                <div class="status-badge ${statusClass}"></div>
+            </div>
+            <div class="member-name">${user.username}</div>
         `;
         list.appendChild(item);
     });
@@ -416,10 +446,13 @@ function updateUsersList() {
 function updateUsername() {
     document.getElementById('username').textContent = myUsername;
     document.getElementById('userAvatar').textContent = myUsername.charAt(0).toUpperCase();
+    const userId = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    document.getElementById('userId').textContent = `#${userId}`;
 }
 
 function updateUserStatus(status) {
-    document.getElementById('userStatus').textContent = status;
+    const indicator = document.getElementById('statusIndicator');
+    indicator.className = 'status-indicator ' + status.toLowerCase();
 }
 
 // Settings
@@ -452,8 +485,11 @@ function toggleMute() {
     }
     
     const btn = document.getElementById("btnMute");
-    btn.textContent = isMuted ? "🔇" : "🔊";
-    btn.style.opacity = isMuted ? "0.5" : "1";
+    if (isMuted) {
+        btn.classList.add('muted');
+    } else {
+        btn.classList.remove('muted');
+    }
 }
 
 function toggleDeafen() {
@@ -469,8 +505,11 @@ function toggleDeafen() {
     });
     
     const btn = document.getElementById("btnDeafen");
-    btn.textContent = isDeafened ? "🔇" : "🔊";
-    btn.style.opacity = isDeafened ? "0.5" : "1";
+    if (isDeafened) {
+        btn.classList.add('muted');
+    } else {
+        btn.classList.remove('muted');
+    }
     
     // Also mute when deafened
     if (isDeafened && !isMuted) {
@@ -484,11 +523,11 @@ window.addEventListener('DOMContentLoaded', () => {
     updateUsername();
     updateUsersList();
     
-    // Close modals on outside click
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('show');
+    // Initialize modals
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('show');
             }
         });
     });
