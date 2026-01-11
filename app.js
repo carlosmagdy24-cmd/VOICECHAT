@@ -1,7 +1,7 @@
 // Configuration
 const SIGNALING_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/signaling'
-    : 'wss://your-signaling-server.herokuapp.com/signaling'; // Update with your server URL
+    : 'wss://voicechat-production-45ae.up.railway.app/signaling';
 
 // State
 let connection = null;
