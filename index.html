@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chat - Discord Style</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Server/Channels Sidebar -->
+        <div class="sidebar channels-sidebar">
+            <div class="server-header">
+                <h2>🎤 Voice Chat</h2>
+            </div>
+            <div class="channels-section">
+                <div class="section-header">
+                    <span>📢 TEXT CHANNELS</span>
+                    <button class="add-btn" onclick="showCreateChannelModal()" title="Create Channel">+</button>
+                </div>
+                <div class="channels-list" id="channelsList">
+                    <div class="channel-item active" data-channel="general" onclick="selectChannel('general')">
+                        <span>#</span> general
+                    </div>
+                </div>
+            </div>
+            <div class="voice-channels-section">
+                <div class="section-header">
+                    <span>🔊 VOICE CHANNELS</span>
+                    <button class="add-btn" onclick="showCreateVoiceChannelModal()" title="Create Voice Channel">+</button>
+                </div>
+                <div class="channels-list" id="voiceChannelsList">
+                    <div class="channel-item voice" data-voice-channel="general-voice" onclick="joinVoiceChannel('general-voice')">
+                        <span>🔊</span> General Voice
+                    </div>
+                </div>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <div class="user-info">
+                    <div class="username" id="username">Guest</div>
+                    <div class="user-status" id="userStatus">Offline</div>
+                </div>
+                <button class="settings-btn" onclick="showSettingsModal()" title="Settings">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="channel-info">
+                    <span id="currentChannelName"># general</span>
+                    <span class="channel-topic" id="channelTopic">General discussion channel</span>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="toggleMute()" id="btnMute" title="Mute/Unmute">🔇</button>
+                    <button class="header-btn" onclick="toggleDeafen()" id="btnDeafen" title="Deafen/Undeafen">🔊</button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-message">
+                    <h1>Welcome to Voice Chat!</h1>
+                    <p>This is the start of the #general channel.</p>
+                </div>
+            </div>
+
+            <div class="message-input-container">
+                <div class="input-wrapper">
+                    <input type="text" id="messageInput" placeholder="Message #general" onkeypress="handleMessageKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Sidebar -->
+        <div class="sidebar users-sidebar">
+            <div class="users-header">
+                <span>MEMBERS — <span id="usersCount">0</span></span>
+            </div>
+            <div class="users-list" id="usersList">
+                <!-- Users will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="createChannelModal" class="modal">
+        <div class="modal-content">
+            <h3>Create Text Channel</h3>
+            <input type="text" id="newChannelName" placeholder="channel-name">
+            <div class="modal-buttons">
+                <button onclick="createChannel()">Create</button>
+                <button onclick="closeModal('createChannelModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createVoiceChannelModal" class="modal">
+        <div class="modal-content">
+            <h3>Create Voice Channel</h3>
+            <input type="text" id="newVoiceChannelName" placeholder="voice-channel-name">
+            <div class="modal-buttons">
+                <button onclick="createVoiceChannel()">Create</button>
+                <button onclick="closeModal('createVoiceChannelModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>Settings</h3>
+            <div class="setting-item">
+                <label>Username:</label>
+                <input type="text" id="settingsUsername" placeholder="Enter username">
+            </div>
+            <div class="modal-buttons">
+                <button onclick="saveSettings()">Save</button>
+                <button onclick="closeModal('settingsModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
